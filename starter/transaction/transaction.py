@@ -10,7 +10,15 @@ class Transaction:
         self.category = category
 
     def __str__(self):
-        pass
+        return f"Transaction(${self.amount}, category='{self.category}')"
+
+    __repr__ = __str__
 
     def __eq__(self, other):
-        pass
+        """Two transactions are equal when their amount and category match."""
+        if not isinstance(other, Transaction):
+            return NotImplemented
+        return self.amount == other.amount and self.category == other.category
+
+    def __hash__(self):
+        return hash((self.amount, self.category))

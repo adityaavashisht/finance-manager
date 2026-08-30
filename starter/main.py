@@ -2,16 +2,23 @@
 from balance.balance import Balance
 from balance.balance_observer import LowBalanceAlertObserver
 from balance.balance_observer import PrintObserver
+from command.transaction_command import ApplyTransactionCommand
+from command.transaction_invoker import TransactionInvoker
 from transaction.transaction import Transaction
 from transaction.transaction_category import TransactionCategory
 from transaction.transaction_adapter import TransactionAdapter
 from transaction.external_income_transaction import ExternalFreelanceIncome
 
+LOW_BALANCE_THRESHOLD = 100
+
 
 def main():
     print("Adding transactions...")
-   
-    # TODO: Create balance and add observers
+
+    # Singleton: one shared balance, plus Observers wired in via injection.
+    balance = Balance.get_instance()
+    balance.register_observer(PrintObserver())
+    balance.register_observer(LowBalanceAlertObserver(LOW_BALANCE_THRESHOLD))
 
     # Create standard transactions
     transactions = [
@@ -28,7 +35,21 @@ def main():
 
     all_transactions = transactions + [adapted_transaction]
 
-    # TODO: Apply all transactions to balance
+    # Command: every transaction goes through the invoker, so it stays undoable.
+    invoker = TransactionInvoker()
+    for transaction in all_transactions:
+        invoker.run(ApplyTransactionCommand(balance, transaction))
+
+    print(f"\n{balance.summary()}")
+
+    print("\nUndoing the last transaction (the freelance invoice)...")
+    invoker.undo()
+    print(balance.summary())
+
+    print("\nRedoing it...")
+    invoker.redo()
+    print(balance.summary())
+
 
 if __name__ == "__main__":
     main()
